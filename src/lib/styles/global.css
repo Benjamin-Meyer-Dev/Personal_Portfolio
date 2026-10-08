@@ -1,0 +1,221 @@
+:root {
+	/* base colours: the other colour tokens are built from these */
+	--ink: #161b22;
+	--blue: #1f5dbe;
+	--red: #c8343a;
+	--green: #12715c;
+	--amber: #a95a10;
+	--purple: #5a3eb4;
+	--white: #ffffff;
+	--shadow-tint: #1e283c;
+
+	/* surfaces */
+	--page: #eef1f4;
+	--surface: var(--white);
+	--surface-2: #f7f8fa;
+	--surface-3: #f4f6f8;
+	--map-bg: #dce1e7;
+
+	/* text, darkest to lightest (--ink is above) */
+	--ink-2: #2c333d;
+	--ink-3: #454e5b;
+	--ink-4: #5e6773;
+
+	/* hairlines: the ink colour, mostly see-through */
+	--line: color-mix(in srgb, var(--ink) 8%, transparent);
+	--line-2: color-mix(in srgb, var(--ink) 14%, transparent);
+	--line-3: color-mix(in srgb, var(--ink) 20%, transparent);
+
+	/* darker, paler and outline versions of the accents */
+	--blue-ink: #163f82;
+	--blue-soft: #eef3fc;
+	--blue-line: color-mix(in srgb, var(--blue) 28%, transparent);
+	--red-ink: #ae262b;
+	--red-soft: #fff1f1;
+
+	/* links and the keyboard focus ring */
+	--link: var(--blue);
+	--link-hover: var(--blue-ink);
+	--focus-ring: var(--blue);
+
+	/* one ink, one fill and one bright accent per island type */
+	--cloud: var(--blue);
+	--cloud-fill: #e6eef9;
+	--work: var(--amber);
+	--work-fill: #f8ecdf;
+	--data: var(--purple);
+	--data-fill: #eee9f8;
+	--self: var(--green);
+	--self-fill: #e3f2ec;
+
+	/* frosted panels: white, slightly see-through, over the map */
+	--header-glass: #eef1f5d1;
+
+	/* type */
+	--sans: 'Instrument Sans', system-ui, sans-serif;
+	--mono: 'Geist Mono', ui-monospace, monospace;
+
+	/* type sizes, smallest to largest */
+	--text-3xs: 10px;
+	--text-2xs: 11px;
+	--text-xs: 12px;
+	--text-sm: 13px;
+	--text-md: 14px;
+	--text-lg: 15px;
+	--text-xl: 16px;
+	--text-2xl: 17px;
+	--text-3xl: 19px;
+	--text-4xl: 22px;
+	--text-5xl: 26px;
+	--text-6xl: 30px;
+	--text-7xl: 40px;
+	--text-8xl: 44px;
+	--text-9xl: 56px;
+
+	/* type weights, letter spacing and line heights */
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--tracking-tight-xl: -0.035em;
+	--tracking-tight-lg: -0.03em;
+	--tracking-tight-md: -0.025em;
+	--tracking-tight-sm: -0.015em;
+	--tracking-tight-xs: -0.01em;
+	--tracking-wide-sm: 0.06em;
+	--tracking-wide-md: 0.08em;
+	--leading-2xs: 1.04;
+	--leading-xs: 1.05;
+	--leading-sm: 1.08;
+	--leading-md: 1.4;
+	--leading-lg: 1.5;
+	--leading-xl: 1.55;
+	--leading-2xl: 1.6;
+
+	/* spacing: gaps, padding, margins and offsets, named by their size in pixels */
+	--space-2: 2px;
+	--space-4: 4px;
+	--space-6: 6px;
+	--space-8: 8px;
+	--space-10: 10px;
+	--space-12: 12px;
+	--space-14: 14px;
+	--space-16: 16px;
+	--space-18: 18px;
+	--space-20: 20px;
+	--space-22: 22px;
+	--space-24: 24px;
+	--space-28: 28px;
+	--space-32: 32px;
+	--space-40: 40px;
+	--space-48: 48px;
+	--space-56: 56px;
+	--space-64: 64px;
+	--space-96: 96px;
+
+	/* sizes */
+	--header-h: 72px;
+	--header-h-phone: 60px;
+	--page-width: 1280px;
+	--tap-size: 44px;
+	--tap-size-lg: 48px;
+	--control-height: 40px;
+	--dot-size: 6px;
+
+	/* corners */
+	--radius-2xs: 2px;
+	--radius-xs: 3px;
+	--radius-sm: 4px;
+	--radius-md: 9px;
+	--radius-lg: 10px;
+	--radius-xl: 12px;
+	--radius-2xl: 18px;
+	--radius-3xl: 20px;
+	--radius-4xl: 22px;
+	--radius-pill: 999px;
+	--radius-round: 50%;
+
+	/* shadows and blur */
+	--shadow-control: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 8%, transparent);
+	--shadow-card: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 5%, transparent);
+	--shadow-float:
+		0 18px 50px color-mix(in srgb, var(--shadow-tint) 14%, transparent),
+		0 2px 6px color-mix(in srgb, var(--shadow-tint) 6%, transparent);
+	--blur-sm: 8px;
+	--blur-md: 10px;
+	--blur-lg: 12px;
+
+	/* motion */
+	--duration-fade: 0.4s;
+	--duration-pulse: 1.6s;
+	--duration-nudge: 1.8s;
+	--ease-standard: ease;
+	--ease-in-out: ease-in-out;
+
+	/* layers, back to front */
+	--layer-overlay: 3;
+	--layer-panel: 5;
+	--layer-tour: 6;
+	--layer-header: 20;
+	--layer-skip-link: 100;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+	scroll-padding-top: var(--header-h);
+}
+
+body {
+	margin: 0;
+	background: var(--page);
+	color: var(--ink);
+	font-family: var(--sans);
+	-webkit-font-smoothing: antialiased;
+}
+
+/* links: `a` is HTML's link element, so this styles every link on the site */
+a {
+	color: var(--link);
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--link-hover);
+}
+
+button {
+	font-family: inherit;
+}
+
+/* the ring around whichever link or button you've reached with the Tab key */
+a:focus-visible,
+button:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 3px;
+}
+
+/* small uppercase mono labels, used all over the site */
+.eyebrow {
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	letter-spacing: var(--tracking-wide-md);
+	text-transform: uppercase;
+	color: var(--ink-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}
