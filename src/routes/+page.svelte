@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Header from '#lib/components/Header.svelte';
+	import MapCanvas from '#lib/components/MapCanvas.svelte';
 </script>
 
 <svelte:head>
@@ -9,10 +10,9 @@
 <Header />
 
 <main>
-	<section id="top" class="hero" aria-label="Introduction">
-		<p class="eyebrow">Portfolio</p>
-		<h1>Benjamin Meyer</h1>
-		<p class="lead">Python, AWS and data systems. A new portfolio is on its way.</p>
+	<section id="top" class="map" aria-label="Interactive 3D map of my work">
+		<h1 class="visually-hidden">Benjamin Meyer, Python, AWS and Data Systems</h1>
+		<MapCanvas />
 	</section>
 
 	<section id="systems" aria-labelledby="systems-h">
@@ -39,16 +39,13 @@
 		border-bottom: 1px solid var(--line);
 	}
 
-	.hero {
-		padding-top: calc(var(--header-h) + 80px);
-	}
-
-	h1 {
-		margin: var(--space-8) 0 var(--space-16);
-		font-size: var(--text-9xl);
-		line-height: var(--leading-2xs);
-		letter-spacing: var(--tracking-tight-xl);
-		font-weight: var(--weight-semibold);
+	.map {
+		position: relative;
+		max-width: none;
+		height: clamp(600px, 100vh, 1080px);
+		padding: 0;
+		overflow: hidden;
+		background: var(--map-bg);
 	}
 
 	h2 {
@@ -59,23 +56,14 @@
 		font-weight: var(--weight-semibold);
 	}
 
-	.lead {
-		font-size: var(--text-2xl);
-		line-height: var(--leading-2xl);
-		color: var(--ink-3);
-	}
-
 	@media (max-width: 767px) {
 		section {
 			padding: var(--space-64) var(--space-20);
 		}
 
-		.hero {
-			padding-top: 120px;
-		}
-
-		h1 {
-			font-size: var(--text-7xl);
+		.map {
+			height: 392px;
+			margin-top: 60px;
 		}
 
 		h2 {
