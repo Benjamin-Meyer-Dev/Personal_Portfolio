@@ -41,12 +41,28 @@
 	/* one ink, one fill and one bright accent per island type */
 	--cloud: var(--blue);
 	--cloud-fill: #e6eef9;
+	--cloud-accent: #3a77d6;
 	--work: var(--amber);
 	--work-fill: #f8ecdf;
+	--work-accent: #e5862f;
 	--data: var(--purple);
 	--data-fill: #eee9f8;
+	--data-accent: #7759d0;
 	--self: var(--green);
 	--self-fill: #e3f2ec;
+	--self-accent: #20a184;
+
+	/* one colour per skill, for its transit line */
+	--skill-python: #2f6fdb;
+	--skill-typescript: #0f9aae;
+	--skill-cdk: #ee8420;
+	--skill-serverless: #d3a10f;
+	--skill-actions: #4e5966;
+	--skill-docker: #1d63ed;
+	--skill-self-host: #2e9e58;
+	--skill-sql-server: #c2413a;
+	--skill-knex: #d24b8e;
+	--skill-ml: #9440bf;
 
 	/* frosted panels: white, slightly see-through, over the map */
 	--header-glass: #eef1f5d1;

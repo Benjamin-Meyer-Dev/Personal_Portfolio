@@ -23,6 +23,7 @@ export default defineConfig({
 	],
 	test: {
 		expect: { requireAssertions: true },
+		css: { include: [/global\.css/] },
 		projects: [
 			{
 				extends: './vite.config.ts',

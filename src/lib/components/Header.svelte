@@ -1,18 +1,18 @@
 <script lang="ts">
 	interface Props {
-		demos?: boolean;
-		touring?: boolean;
-		incidentRunning?: boolean;
-		onTour?: () => void;
-		onIncident?: () => void;
+		Demos?: boolean;
+		Touring?: boolean;
+		IncidentRunning?: boolean;
+		OnTour?: () => void;
+		OnIncident?: () => void;
 	}
 
 	let {
-		demos = false,
-		touring = false,
-		incidentRunning = false,
-		onTour,
-		onIncident
+		Demos = false,
+		Touring = false,
+		IncidentRunning = false,
+		OnTour,
+		OnIncident
 	}: Props = $props();
 
 	let menuOpen = $state(false);
@@ -34,18 +34,18 @@
 	</a>
 
 	<nav aria-label="Primary">
-		{#if demos}
-			<button type="button" class="pill tour" onclick={onTour}>
-				{touring ? 'Stop tour' : 'Take the 1-Minute Tour'}
+		{#if Demos}
+			<button type="button" class="pill tour" onclick={OnTour}>
+				{Touring ? 'Stop tour' : 'Take the 1-Minute Tour'}
 			</button>
 			<button
 				type="button"
 				class="pill incident"
-				aria-disabled={incidentRunning}
-				onclick={onIncident}
+				aria-disabled={IncidentRunning}
+				onclick={OnIncident}
 			>
 				<span class="dot" aria-hidden="true"></span>
-				{incidentRunning ? 'Incident Running' : 'Trigger an Incident'}
+				{IncidentRunning ? 'Incident Running' : 'Trigger an Incident'}
 			</button>
 			<span class="divider" aria-hidden="true"></span>
 		{/if}
