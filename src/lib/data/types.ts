@@ -4,50 +4,50 @@ import type { SkillID } from '#lib/data/skills.ts';
 export type TypeID = 'cloud' | 'work' | 'data' | 'self';
 
 export interface ProjectType {
-	ID: TypeID;
-	Name: string;
-	Sub: string;
-	Ink: string;
-	Fill: string;
-	Accent: string;
-	Noun: string;
+	id: TypeID;
+	name: string;
+	sub: string;
+	ink: string;
+	fill: string;
+	accent: string;
+	noun: string;
 }
 
 /* A button in a city's panel that runs its demo */
 export interface Action {
-	ID: string;
-	Label: string;
+	id: string;
+	label: string;
 }
 
 export interface Project {
-	ID: string;
-	Type: TypeID;
-	City: string;
-	Kicker: string;
-	Title: string;
-	Sub: string;
-	Summary: string;
-	Scene: string;
-	Actions: Action[];
-	Facts: string[];
-	Tags: string[];
-	Uses: Partial<Record<SkillID, string>>;
-	Map?: {
-		Radius?: number;
-		LabelY?: number;
-		Focus?: { Distance: number; TY: number; EL: number };
+	id: string;
+	type: TypeID;
+	city: string;
+	kicker: string;
+	title: string;
+	sub: string;
+	summary: string;
+	scene: string;
+	actions: Action[];
+	facts: string[];
+	tags: string[];
+	uses: Partial<Record<SkillID, string>>;
+	map?: {
+		radius?: number;
+		labelY?: number;
+		focus?: { distance: number; ty: number; el: number };
 	};
-	Preview?: boolean;
+	preview?: boolean;
 }
 
 /* The capital in the middle of the map */
 export interface Capital {
-	Kicker: string;
-	Title: string;
-	Sub: string;
-	Summary: string;
-	Scene: string;
-	Actions: Action[];
-	Facts: string[];
-	Tags: string[];
+	kicker: string;
+	title: string;
+	sub: string;
+	summary: string;
+	scene: string;
+	actions: Action[];
+	facts: string[];
+	tags: string[];
 }

@@ -12,30 +12,30 @@ export function projectList(previews = 0): Project[] {
 }
 
 /* Find a project by ID, incluidng the sample projects */
-export function getProject(ID: string): Project | undefined {
+export function getProject(id: string): Project | undefined {
 	return (
-		allProjects.find((project) => project.ID === ID) ??
-		futureProjects.find((project) => project.ID === ID)
+		allProjects.find((project) => project.id === id) ??
+		futureProjects.find((project) => project.id === id)
 	);
 }
 
-export function getType(ID: TypeID): ProjectType {
-	const projectType = projectTypes.find((type) => type.ID === ID);
+export function getType(id: TypeID): ProjectType {
+	const projectType = projectTypes.find((type) => type.id === id);
 
 	if (!projectType) {
-		throw new Error(`Unknown project type: ${ID}`);
+		throw new Error(`Unknown project type: ${id}`);
 	}
 
 	return projectType;
 }
 
 export function usesSkill(project: Project, skill: SkillID): boolean {
-	return Boolean(project.Uses[skill]);
+	return Boolean(project.uses[skill]);
 }
 
 /* The skills a project uses, in a stable order - sky bar fills first */
 export function skillsOf(project: Project): SkillID[] {
-	const keys = Object.keys(project.Uses) as SkillID[];
+	const keys = Object.keys(project.uses) as SkillID[];
 	const rank = (skill: SkillID) => {
 		const index = skillBar.indexOf(skill);
 		return index < 0 ? skillBar.length + Object.keys(skillInfo).indexOf(skill) : index;
@@ -45,7 +45,7 @@ export function skillsOf(project: Project): SkillID[] {
 }
 
 export function projectsOfType(type: TypeID, list: Project[] = allProjects): Project[] {
-	return list.filter((project) => project.Type === type);
+	return list.filter((project) => project.type === type);
 }
 
 export function projectsUsing(skill: SkillID, list: Project[] = allProjects): Project[] {
