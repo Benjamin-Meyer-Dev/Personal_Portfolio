@@ -172,6 +172,10 @@
 	--layer-tour: 6;
 	--layer-header: 20;
 	--layer-skip-link: 100;
+
+	/* 3D map: light, fog and the backdrop */
+	--grid-major: #9aa3ad;
+	--grid-minor: #c4cad2;
 }
 
 *,
