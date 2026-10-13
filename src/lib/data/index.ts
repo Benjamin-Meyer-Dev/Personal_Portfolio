@@ -1,6 +1,6 @@
 import { futureProjects, projectTypes, allProjects } from './projects';
 import { skillBar, skillInfo, type SkillID } from './skills';
-import type { Project, ProjectType, TypeID } from './types';
+import type { Project, ProjectType, TypeId } from './types';
 
 export * from './types';
 export * from './skills';
@@ -19,7 +19,7 @@ export function getProject(id: string): Project | undefined {
 	);
 }
 
-export function getType(id: TypeID): ProjectType {
+export function getType(id: TypeId): ProjectType {
 	const projectType = projectTypes.find((type) => type.id === id);
 
 	if (!projectType) {
@@ -44,7 +44,7 @@ export function skillsOf(project: Project): SkillID[] {
 	return keys.sort((first, second) => rank(first) - rank(second));
 }
 
-export function projectsOfType(type: TypeID, list: Project[] = allProjects): Project[] {
+export function projectsOfType(type: TypeId, list: Project[] = allProjects): Project[] {
 	return list.filter((project) => project.type === type);
 }
 
