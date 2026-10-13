@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CameraRig } from './CameraRig';
 import { hexColour } from '#lib/styles/tokens.ts';
 
 export interface MapSceneOptions {
@@ -17,11 +18,14 @@ export class MapScene {
 	readonly renderer: THREE.WebGLRenderer;
 	readonly scene = new THREE.Scene();
 	readonly camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.1, 300);
+	readonly rig: CameraRig;
 
 	width = 0;
 	height = 0;
 	time = 0;
 	frames = 0;
+
+	onResize?: () => void;
 
 	private parts: Part[] = [];
 	private raf = 0;
@@ -39,8 +43,7 @@ export class MapScene {
 		this.renderer.setPixelRatio(Math.min(opts.lite ? 1.25 : 2, window.devicePixelRatio || 1));
 		this.renderer.setClearColor(hexColour('--map-bg'), 1);
 
-		this.camera.position.set(0, 6, 10);
-		this.camera.lookAt(0, 0, 0);
+		this.rig = this.add(new CameraRig(this.camera, canvas));
 
 		this.io = new IntersectionObserver(
 			(entries) => {
@@ -96,6 +99,7 @@ export class MapScene {
 		this.renderer.setSize(width, height, false);
 		this.camera.aspect = width / height;
 		this.camera.updateProjectionMatrix();
+		this.onResize?.();
 	}
 
 	private frame(ts: number): void {
