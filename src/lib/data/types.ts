@@ -1,10 +1,10 @@
 import type { SkillID } from '#lib/data/skills.ts';
 
 /* The four kinds of work, each one is an island on the map */
-export type TypeID = 'cloud' | 'work' | 'data' | 'self';
+export type TypeId = 'cloud' | 'work' | 'data' | 'self';
 
 export interface ProjectType {
-	id: TypeID;
+	id: TypeId;
 	name: string;
 	sub: string;
 	ink: string;
@@ -21,7 +21,7 @@ export interface Action {
 
 export interface Project {
 	id: string;
-	type: TypeID;
+	type: TypeId;
 	city: string;
 	kicker: string;
 	title: string;
