@@ -174,8 +174,17 @@
 	--layer-skip-link: 100;
 
 	/* 3D map: light, fog and the backdrop */
-	--grid-major: #9aa3ad;
-	--grid-minor: #c4cad2;
+	--light-ambient: #eef1f8;
+	--light-sun: #fff4e6;
+
+	/* 3D map: the lake and the land around it */
+	--lake-land: #d9e2cf;
+	--lake-land-side: #c4cfb8;
+	--lake-sand: #ece5d2;
+	--lake-beach-edge: #e3e6d6;
+	--lake-water: #b9d8de;
+	--lake-shallow: #d9ecec;
+	--lake-incident: #d9c3c6;
 }
 
 *,

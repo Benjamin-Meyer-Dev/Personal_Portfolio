@@ -1,50 +1,26 @@
 <script lang="ts">
-	import * as THREE from 'three';
+	import { projectList } from '#lib/data/index.ts';
 	import { MapScene } from '#lib/engine/MapScene.ts';
-	import type { FitPoint } from '#lib/engine/CameraRig.ts';
-	import { hexColour } from '#lib/styles/tokens.ts';
+	import { buildWorld } from '#lib/engine/world/index.ts';
 
 	let canvas: HTMLCanvasElement;
 	let ready = $state(false);
 
 	$effect(() => {
 		const map = new MapScene(canvas, { onReady: () => (ready = true) });
-
-		const cube = new THREE.Mesh(
-			new THREE.BoxGeometry(2, 2, 2),
-			new THREE.MeshStandardMaterial({ color: hexColour('--cloud-accent') })
-		);
-
-		cube.position.y = 1;
-
-		map.scene.add(cube);
-		map.scene.add(new THREE.AmbientLight(hexColour('--white'), 1));
-
-		const sun = new THREE.DirectionalLight(hexColour('--white'), 2);
-		sun.position.set(-11, 19, 8);
-
-		map.scene.add(sun);
-		map.scene.add(
-			new THREE.GridHelper(20, 20, hexColour('--grid-major'), hexColour('--grid-minor'))
-		);
-
-		const fitPoints: FitPoint[] = [];
-
-		for (const x of [-1, 1]) {
-			for (const y of [0, 2]) {
-				for (const z of [-1, 1]) {
-					fitPoints.push({ point: new THREE.Vector3(x, y, z) });
-				}
-			}
-		}
+		const world = buildWorld(map, projectList());
 
 		const overview = () =>
 			map.rig.fit(
-				fitPoints,
+				world.fitPoints,
 				map.width,
 				map.height,
 				{ top: 84, bottom: 108, side: 24 },
-				{ tx: 0, tz: 0, el: 0.56 }
+				{
+					tx: 1,
+					tz: 3.5,
+					el: 0.56
+				}
 			);
 
 		map.onResize = () => {
@@ -53,6 +29,7 @@
 			}
 		};
 
+		map.rig.minR = 22;
 		map.rig.flyTo(overview());
 		map.rig.snap();
 		map.start();
