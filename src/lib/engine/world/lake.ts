@@ -4,6 +4,8 @@ import type { Layout } from '../layout.ts';
 import type { Part } from '../MapScene.ts';
 import { bandGeo, inPoly, offsetPts, pushOut, ringGeo, shapeFrom, type Pt } from './geometry.ts';
 import { cssColour, hexColour } from '#lib/styles/tokens.ts';
+import { worldRandom } from './seed.ts';
+import { clamp } from '../util.ts';
 
 /* Heights of the landscape layers */
 export const landLevels = { water: 0.04, top: 0.16, coreElev: 0.3 };
@@ -27,11 +29,13 @@ export interface Lake {
 
 /* A rounded lake with a slightly irregular shore, sized to leave water around every island */
 export function lakeOutline(layout: Layout): Lake {
-	const hx = layout.xMax + 6.6;
-	const zb = layout.zBack + 7.0;
-	const zf = layout.zFront + 6.4;
+	const hx = layout.xMax + 8.0;
+	const zb = layout.zBack + 8.4;
+	const zf = layout.zFront + 7.8;
 	const cz = (zf - zb) / 2;
 	const hz = (zb + zf) / 2;
+	const rnd = worldRandom(1);
+	const phase = [rnd(), rnd(), rnd(), rnd()].map((value) => value * Math.PI * 2);
 	const pts: Pt[] = [];
 	const segments = 200;
 
@@ -42,10 +46,10 @@ export function lakeOutline(layout: Layout): Lake {
 		const radius = Math.pow(Math.pow(Math.abs(cosine), 4) + Math.pow(Math.abs(sine), 4), -0.25);
 		const wob =
 			1 +
-			0.045 * Math.sin(2 * th + 0.7) +
-			0.03 * Math.sin(3 * th + 2.1) +
-			0.022 * Math.sin(5 * th + 0.3) +
-			0.012 * Math.sin(9 * th + 1.3);
+			0.045 * Math.sin(2 * th + phase[0]) +
+			0.03 * Math.sin(3 * th + phase[1]) +
+			0.022 * Math.sin(5 * th + phase[2]) +
+			0.012 * Math.sin(9 * th + phase[3]);
 
 		pts.push([cosine * radius * hx * wob, cz + sine * radius * hz * wob]);
 	}
@@ -146,12 +150,16 @@ export function buildLake(scene: THREE.Scene, layout: Layout): LakeParts {
 	boardMesh.receiveShadow = true;
 	root.add(boardMesh);
 
+	const rnd = worldRandom(2);
+	const beachPhase = [rnd(), rnd()].map((value) => value * Math.PI * 2);
+	const shallowPhase = [rnd(), rnd()].map((value) => value * Math.PI * 2);
+
 	const beachOut = pushOut(
 		lake.pts,
 		(progress) =>
 			2.0 +
-			0.25 * Math.sin(progress * Math.PI * 2 * 4 + 0.8) +
-			0.15 * Math.sin(progress * Math.PI * 2 * 9 + 2.3)
+			0.25 * Math.sin(progress * Math.PI * 2 * 4 + beachPhase[0]) +
+			0.15 * Math.sin(progress * Math.PI * 2 * 9 + beachPhase[1])
 	);
 	const beach = new THREE.Mesh(
 		ringGeo(
@@ -175,25 +183,10 @@ export function buildLake(scene: THREE.Scene, layout: Layout): LakeParts {
 
 	const shallowWidth = (progress: number) =>
 		1.8 +
-		0.6 * Math.sin(progress * Math.PI * 2 * 3 + 2.0) +
-		0.3 * Math.sin(progress * Math.PI * 2 * 7 + 0.4);
+		0.6 * Math.sin(progress * Math.PI * 2 * 3 + shallowPhase[0]) +
+		0.3 * Math.sin(progress * Math.PI * 2 * 7 + shallowPhase[1]);
 	const fadeWidth = 2.0;
-	const fadeSteps = 8;
-	const shoreOutlines: Pt[][] = [];
-	const fadeIn: number[] = [];
-
-	for (let step = 0; step <= fadeSteps; step++) {
-		const along = step / fadeSteps;
-
-		shoreOutlines.push(
-			pushOut(lake.pts, (progress) => -shallowWidth(progress) - fadeWidth * (1 - along))
-		);
-
-		fadeIn.push(along * along * (3 - 2 * along));
-	}
-
-	shoreOutlines.push(lake.pts);
-	fadeIn.push(1);
+	const smoothStep = (along: number) => along * along * (3 - 2 * along);
 
 	const waterMat = new THREE.MeshStandardMaterial({
 		color: colours.water,
@@ -216,35 +209,74 @@ export function buildLake(scene: THREE.Scene, layout: Layout): LakeParts {
 			.replace('mapN.xy *= normalScale;', 'mapN.xy *= normalScale * (1.0 - vCalm);');
 	};
 
-	const openGeo = new THREE.ShapeGeometry(shapeFrom(shoreOutlines[0]));
-	openGeo.rotateX(-Math.PI / 2);
+	const xs = lake.pts.map(([x]) => x);
+	const zs = lake.pts.map(([, z]) => z);
+	const x0 = Math.min(...xs) - 1;
+	const x1 = Math.max(...xs) + 1;
+	const z0 = Math.min(...zs) - 1;
+	const z1 = Math.max(...zs) + 1;
+	const waterGeo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, 96, 96);
 
-	const openCalm = new Array(openGeo.attributes.position.count).fill(0);
-	openGeo.setAttribute('calm', new THREE.Float32BufferAttribute(openCalm, 1));
+	waterGeo.rotateX(-Math.PI / 2);
+	waterGeo.translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
 
-	const shoreGeo = bandGeo(
-		shoreOutlines,
-		0,
-		shoreOutlines.map(() => colours.water),
-		fadeIn
-	);
-	const shoreCalm = shoreOutlines.flatMap((pts, ring) => pts.map(() => fadeIn[ring] * 0.9));
-	shoreGeo.setAttribute('calm', new THREE.Float32BufferAttribute(shoreCalm, 1));
+	const position = waterGeo.attributes.position;
+	const uv = waterGeo.attributes.uv;
+	const calm = new Float32Array(position.count);
 
-	const water = new THREE.Mesh(openGeo, waterMat);
-	const waterShore = new THREE.Mesh(shoreGeo, waterMat);
+	for (let i = 0; i < position.count; i++) {
+		const x = position.getX(i);
+		const z = position.getZ(i);
 
-	for (const mesh of [water, waterShore]) {
-		mesh.position.y = landLevels.water;
-		mesh.receiveShadow = true;
-		root.add(mesh);
+		uv.setXY(i, x, -z);
+
+		let nearest = 0;
+		let gap = Infinity;
+
+		lake.pts.forEach(([px, pz], j) => {
+			const distance = Math.hypot(px - x, pz - z);
+
+			if (distance < gap) {
+				gap = distance;
+				nearest = j;
+			}
+		});
+
+		const depth = inPoly(x, z, lake.pts) ? gap : 0;
+		const width = shallowWidth(nearest / lake.pts.length);
+		const along = clamp((width + fadeWidth - depth) / fadeWidth, 0, 1);
+
+		calm[i] = 0.9 * smoothStep(along);
 	}
 
-	const shallowColours = shoreOutlines.map((pts) =>
-		pts === lake.pts ? colours.shallow : colours.deep
-	);
+	waterGeo.setAttribute('calm', new THREE.BufferAttribute(calm, 1));
+
+	const water = new THREE.Mesh(waterGeo, waterMat);
+	water.position.y = landLevels.water;
+	water.receiveShadow = true;
+	root.add(water);
+
+	const fadeSteps = 8;
+	const outlines: Pt[][] = [];
+	const shallowColours: string[] = [];
+	const alphas: number[] = [];
+
+	for (let step = 0; step <= fadeSteps; step++) {
+		const along = step / fadeSteps;
+
+		outlines.push(
+			pushOut(lake.pts, (progress) => -shallowWidth(progress) - fadeWidth * (1 - along))
+		);
+		shallowColours.push(colours.deep);
+		alphas.push(smoothStep(along));
+	}
+
+	outlines.push(lake.pts, offsetPts(lake.pts, 1.0));
+	shallowColours.push(colours.shallow, colours.shallow);
+	alphas.push(1, 1);
+
 	const shallows = new THREE.Mesh(
-		bandGeo(shoreOutlines, landLevels.water + 0.004, shallowColours, fadeIn),
+		bandGeo(outlines, landLevels.water + 0.004, shallowColours, alphas),
 		new THREE.MeshStandardMaterial({
 			vertexColors: true,
 			roughness: 0.4,

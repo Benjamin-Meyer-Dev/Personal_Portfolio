@@ -185,6 +185,16 @@
 	--lake-water: #b9d8de;
 	--lake-shallow: #d9ecec;
 	--lake-incident: #d9c3c6;
+
+	/* 3D map: islands */
+	--island-sand: #ece4cf;
+	--island-sand-side: #dcd2b8;
+	--island-grass: #dedec6;
+	--island-grass-side: #bdcaaf;
+	--island-shallow: #ddefec;
+	--island-top: #f8f7f2;
+	--island-side: #f6f7f8;
+	--island-side-shade: #6e6450;
 }
 
 *,
