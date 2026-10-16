@@ -195,6 +195,23 @@
 	--island-top: #f8f7f2;
 	--island-side: #f6f7f8;
 	--island-side-shade: #6e6450;
+
+	/* 3D map: hills, trees and rocks */
+	--hill-low: #c9d7bc;
+	--hill-high: #eef2e8;
+	--hill-shade: #6e7a60;
+	--islet-top: #dce5d0;
+	--islet-side: #c5d0b8;
+	--tree-trunk: #b8ae9c;
+	--tree-canopy-1: #bcd0ad;
+	--tree-canopy-2: #cbdabd;
+	--tree-canopy-3: #dae5cf;
+	--tree-canopy-4: #e9efe2;
+	--tree-canopy-5: #f4f6f1;
+	--rock-1: #dad7cd;
+	--rock-2: #cdc9bd;
+	--rock-3: #e6e3da;
+	--rock-4: #c4c1b6;
 }
 
 *,

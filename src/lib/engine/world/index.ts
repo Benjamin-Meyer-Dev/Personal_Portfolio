@@ -6,6 +6,7 @@ import type { MapScene } from '../MapScene.ts';
 import { buildCapitalIsland, buildIsland, type IslandParts, type Layers } from './island.ts';
 import { buildLake, landLevels, type LakeParts } from './lake.ts';
 import { worldRandom } from './seed.ts';
+import { buildNature } from './nature.ts';
 import { hexColour } from '#lib/styles/tokens.ts';
 
 export interface World {
@@ -25,6 +26,8 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 	const shadows = false;
 	const islands = layout.islands.map((island) => buildIsland(map.scene, island, shadows));
 	const capital = buildCapitalIsland(map.scene, layout, shadows);
+
+	buildNature(map.scene, layout, lake, islands, capital, shadows);
 
 	map.scene.add(new THREE.AmbientLight(hexColour('--light-ambient'), 1.2));
 
