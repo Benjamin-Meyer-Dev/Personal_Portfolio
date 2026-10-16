@@ -176,6 +176,7 @@
 	/* 3D map: light, fog and the backdrop */
 	--light-ambient: #eef1f8;
 	--light-sun: #fff4e6;
+	--light-rim: #dce6ff;
 
 	/* 3D map: the lake and the land around it */
 	--lake-land: #d9e2cf;

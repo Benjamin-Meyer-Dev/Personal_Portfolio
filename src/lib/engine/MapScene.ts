@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CameraRig } from './CameraRig';
+import type { TiltShift } from './look.ts';
 import { hexColour } from '#lib/styles/tokens.ts';
 
 export interface MapSceneOptions {
@@ -26,7 +27,11 @@ export class MapScene {
 	frames = 0;
 
 	onResize?: () => void;
+	fx: TiltShift | null = null;
+	qualitySteps: (() => void)[] = [];
 
+	private dpr: number;
+	private perf = { samples: 0, sum: 0, level: 0 };
 	private parts: Part[] = [];
 	private raf = 0;
 	private last = 0;
@@ -40,7 +45,8 @@ export class MapScene {
 		readonly opts: MapSceneOptions = {}
 	) {
 		this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-		this.renderer.setPixelRatio(Math.min(opts.lite ? 1.25 : 2, window.devicePixelRatio || 1));
+		this.dpr = Math.min(opts.lite ? 1.25 : 1.5, window.devicePixelRatio || 1);
+		this.renderer.setPixelRatio(this.dpr);
 		this.renderer.setClearColor(hexColour('--map-bg'), 1);
 
 		this.rig = this.add(new CameraRig(this.camera, canvas));
@@ -86,11 +92,24 @@ export class MapScene {
 		this.raf = 0;
 	}
 
-	private resize(): void {
+	/* Swap the post-processing pass */
+	setFx(fx: TiltShift | null): void {
+		this.fx?.dispose();
+		this.fx = fx;
+		fx?.setSize(this.width, this.height, this.dpr);
+	}
+
+	setPixelRatio(dpr: number): void {
+		this.dpr = dpr;
+		this.renderer.setPixelRatio(dpr);
+		this.resize(true);
+	}
+
+	private resize(force = false): void {
 		const width = this.canvas.clientWidth;
 		const height = this.canvas.clientHeight;
 
-		if (!width || !height || (width === this.width && height === this.height)) {
+		if (!width || !height || (!force && width === this.width && height === this.height)) {
 			return;
 		}
 
@@ -99,6 +118,7 @@ export class MapScene {
 		this.renderer.setSize(width, height, false);
 		this.camera.aspect = width / height;
 		this.camera.updateProjectionMatrix();
+		this.fx?.setSize(width, height, this.dpr);
 		this.onResize?.();
 	}
 
@@ -108,7 +128,8 @@ export class MapScene {
 			return;
 		}
 
-		const dt = this.last ? Math.min(0.05, (ts - this.last) / 1000) : 1 / 60;
+		const raw = this.last ? (ts - this.last) / 1000 : 1 / 60;
+		const dt = Math.min(0.05, raw);
 
 		this.last = ts;
 		this.time += dt;
@@ -119,6 +140,7 @@ export class MapScene {
 		}
 
 		this.render();
+		this.adapt(raw);
 
 		if (!this.shown) {
 			this.shown = true;
@@ -127,7 +149,36 @@ export class MapScene {
 	}
 
 	protected render(): void {
-		this.renderer.render(this.scene, this.camera);
+		if (this.fx) {
+			this.fx.render(this.scene, this.camera);
+		} else {
+			this.renderer.render(this.scene, this.camera);
+		}
+	}
+
+	private adapt(raw: number): void {
+		const perf = this.perf;
+
+		if (raw > 0.5 || perf.level >= this.qualitySteps.length) {
+			return;
+		}
+
+		perf.samples++;
+		perf.sum += raw;
+
+		if (perf.samples < 90) {
+			return;
+		}
+
+		const avg = perf.sum / perf.samples;
+		perf.samples = 0;
+		perf.sum = 0;
+
+		if (avg < 1 / 32) {
+			return;
+		}
+
+		this.qualitySteps[perf.level++]();
 	}
 
 	/* Free everything on the GPU */
@@ -139,6 +190,8 @@ export class MapScene {
 		for (const part of this.parts) {
 			part.dispose?.();
 		}
+
+		this.fx?.dispose();
 
 		this.scene.traverse((obj) => {
 			const mesh = obj as THREE.Mesh;
