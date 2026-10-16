@@ -7,8 +7,14 @@ export const layoutSizes = {
 	corr: 1.5,
 	marg: 0.6,
 	rowGap: 0.4,
-	aveX: 3.9,
-	aveZ: 3.4,
+	aveX: 2.0,
+	aveZ: 2.0,
+	capitalRoom: 5.6,
+	shoreRoom: 2.0,
+	landSlack: 0.6,
+	districtCorner: 1.6,
+	islandShift: 2.5,
+	districtShift: 3.0,
 	band: 1.5,
 	scale: 0.84
 };
@@ -20,6 +26,9 @@ export const islandSide: Record<TypeId, [number, number]> = {
 	data: [-1, 1],
 	self: [1, 1]
 };
+
+/* The shape of every island's land */
+export const landShape = { power: 3, aspect: 1.15, wobble: 0.03 };
 
 /* Islands sit at slightly different heights */
 export const islandElev: Record<TypeId, number> = {
@@ -39,6 +48,13 @@ export interface Lot {
 	projectId: string | null;
 }
 
+export interface Land {
+	cx: number;
+	cz: number;
+	hx: number;
+	hz: number;
+}
+
 export interface Island {
 	type: ProjectType;
 	sx: number;
@@ -49,6 +65,7 @@ export interface Island {
 	elev: number;
 	used: number;
 	total: number;
+	land: Land;
 	x0: number;
 	x1: number;
 	z0: number;
@@ -82,8 +99,78 @@ export interface Layout {
 	zFront: number;
 }
 
-export function layoutProjects(list: Project[], opts: { coreElev?: number } = {}): Layout {
+/* A point on a land's oval at angle `th`, `scale` times its size */
+export function landPoint(land: Land, th: number, scale = 1): [number, number] {
+	const { power } = landShape;
+	const cosine = Math.cos(th);
+	const sine = Math.sin(th);
+	const radius =
+		scale *
+		Math.pow(
+			Math.pow(Math.abs(cosine) / land.hx, power) + Math.pow(Math.abs(sine) / land.hz, power),
+			-1 / power
+		);
+
+	return [land.cx + cosine * radius, land.cz + sine * radius];
+}
+
+/* `count` points round a land's oval */
+export function landOutline(
+	land: Land,
+	count: number,
+	bump?: (progress: number) => number
+): [number, number][] {
+	return Array.from({ length: count }, (_, i) =>
+		landPoint(land, (i / count) * Math.PI * 2, 1 + landShape.wobble * (bump ? bump(i / count) : 1))
+	);
+}
+
+/* Is a point inside a land's oval */
+export function inLand(land: Land, x: number, z: number): boolean {
+	const { power } = landShape;
+
+	return (
+		Math.pow(Math.abs(x - land.cx) / land.hx, power) +
+			Math.pow(Math.abs(z - land.cz) / land.hz, power) <=
+		1 + 1e-9
+	);
+}
+
+/* Does a distrcit fit inside a land with room to spare on each side */
+export function distrcitFits(
+	land: Land,
+	x: number,
+	z: number,
+	width: number,
+	depth: number,
+	room: number
+): boolean {
+	const corner = layoutSizes.districtCorner;
+
+	for (const sx of [-1, 1]) {
+		for (const sz of [-1, 1]) {
+			for (let step = 0; step <= 12; step++) {
+				const th = (step / 12) * (Math.PI / 2);
+				const px = x + sx * (width / 2 - corner + (corner + room) * Math.cos(th));
+				const pz = z + sz * (depth / 2 - corner + (corner + room) * Math.sin(th));
+
+				if (!inLand(land, px, pz)) {
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+/* Lays out the islands, their districts and lots and a site for each project */
+export function layoutProjects(
+	list: Project[],
+	opts: { coreElev?: number; rnd?: () => number } = {}
+): Layout {
 	const sizes = layoutSizes;
+	const rnd = opts.rnd ?? (() => 0.5);
 	const islands: Island[] = [];
 	const freeLots: Lot[] = [];
 	const sites: Site[] = [
@@ -102,14 +189,81 @@ export function layoutProjects(list: Project[], opts: { coreElev?: number } = {}
 		}
 	];
 
+	const rowsOf = (type: ProjectType) =>
+		lotsFor(list.filter((project) => project.type === type.id).length) / 2;
+	const depthOf = (rows: number) =>
+		2 * sizes.marg + sizes.band + rows * sizes.lot + (rows - 1) * sizes.rowGap;
+	const width = 2 * sizes.marg + 2 * sizes.lot + sizes.corr;
+	const deepest = Math.max(...projectTypes.map((type) => depthOf(rowsOf(type))));
+	const { aspect, wobble } = landShape;
+	const ratio = (aspect * width) / deepest;
+
+	let small = 1;
+	let big = 60;
+
+	for (let step = 0; step < 40; step++) {
+		const half = (small + big) / 2;
+		const trial: Land = { cx: 0, cz: 0, hx: ratio * half, hz: half };
+
+		if (distrcitFits(trial, 0, 0, width, deepest, sizes.shoreRoom + sizes.landSlack)) {
+			big = half;
+		} else {
+			small = half;
+		}
+	}
+
+	const hz = big;
+	const hx = ratio * big;
+	const nearX = sizes.aveX + hx * (1 + wobble);
+	const nearZ = sizes.aveZ + hz * (1 + wobble);
+
 	for (const type of projectTypes) {
 		const members = list.filter((project) => project.type === type.id);
 		const [sx, sz] = islandSide[type.id];
-		const rows = lotsFor(members.length) / 2;
-		const width = 2 * sizes.marg + 2 * sizes.lot + sizes.corr;
-		const depth = 2 * sizes.marg + sizes.band + rows * sizes.lot + (rows - 1) * sizes.rowGap;
+		const rows = rowsOf(type);
+		const depth = depthOf(rows);
 		const elev = islandElev[type.id];
-		const rowStart = sizes.aveZ + sizes.marg + (sz < 0 ? sizes.band : 0);
+
+		const land: Land = {
+			cx: sx * (nearX + rnd() * sizes.islandShift),
+			cz: sz * (nearZ + rnd() * sizes.islandShift),
+			hx,
+			hz
+		};
+
+		for (let step = 0; step < 20; step++) {
+			const shore = landOutline(land, 72);
+			const closest = Math.min(...shore.map(([x, z]) => Math.hypot(x, z)));
+
+			if (closest >= sizes.capitalRoom) {
+				break;
+			}
+
+			const push = (sizes.capitalRoom - closest) / Math.SQRT2 + 0.05;
+			land.cx += sx * push;
+			land.cz += sz * push;
+		}
+
+		let dx = (rnd() * 2 - 1) * sizes.districtShift;
+		let dz = (rnd() * 2 - 1) * sizes.districtShift;
+
+		const fits = () =>
+			distrcitFits(land, land.cx + dx, land.cz + dz, width, depth, sizes.shoreRoom);
+
+		for (let step = 0; step < 40 && !fits(); step++) {
+			dx *= 0.85;
+			dz *= 0.85;
+		}
+
+		if (!fits()) {
+			dx = dz = 0;
+		}
+
+		const midX = land.cx + dx;
+		const midZ = land.cz + dz;
+		const innerX = sx * midX - width / 2;
+		const innerZ = sz * midZ - depth / 2;
+		const rowStart = innerZ + sizes.marg + (sz < 0 ? sizes.band : 0);
 
 		const island: Island = {
 			type,
@@ -121,11 +275,12 @@ export function layoutProjects(list: Project[], opts: { coreElev?: number } = {}
 			elev,
 			used: members.length,
 			total: rows * 2,
-			x0: sx * sizes.aveX,
-			x1: sx * (sizes.aveX + width),
-			z0: sz * sizes.aveZ,
-			z1: sz * (sizes.aveZ + depth),
-			spineX: sx * (sizes.aveX + sizes.marg + sizes.lot + sizes.corr / 2),
+			land,
+			x0: sx * innerX,
+			x1: sx * (innerX + width),
+			z0: sz * innerZ,
+			z1: sz * (innerZ + depth),
+			spineX: sx * (innerX + sizes.marg + sizes.lot + sizes.corr / 2),
 			rowStart,
 			lots: []
 		};
@@ -139,7 +294,7 @@ export function layoutProjects(list: Project[], opts: { coreElev?: number } = {}
 				idx: lotIndex,
 				row,
 				col,
-				x: sx * (sizes.aveX + sizes.marg + sizes.lot / 2 + col * (sizes.lot + sizes.corr)),
+				x: sx * (innerX + sizes.marg + sizes.lot / 2 + col * (sizes.lot + sizes.corr)),
 				z: sz * (rowStart + sizes.lot / 2 + row * (sizes.lot + sizes.rowGap)),
 				projectId: project ? project.id : null
 			};
@@ -168,21 +323,27 @@ export function layoutProjects(list: Project[], opts: { coreElev?: number } = {}
 		islands.push(island);
 	}
 
-	let xMax = 0;
-	let zBack = 0;
-	let zFront = 0;
+	let xMax = nearX + sizes.islandShift + hx * (1 + wobble);
+	let zBack = nearZ + sizes.islandShift + hz * (1 + wobble);
+	let zFront = zBack;
 
 	for (const island of islands) {
-		xMax = Math.max(xMax, Math.abs(island.x1));
+		const { cx, cz } = island.land;
+		xMax = Math.max(xMax, Math.abs(cx) + hx * (1 + wobble));
 
 		if (island.sz < 0) {
-			zBack = Math.max(zBack, Math.abs(island.z1));
+			zBack = Math.max(zBack, Math.abs(cz) + hz * (1 + wobble));
 		} else {
-			zFront = Math.max(zFront, Math.abs(island.z1));
+			zFront = Math.max(zFront, Math.abs(cz) + hz * (1 + wobble));
 		}
 	}
 
 	return { islands, sites, freeLots, xMax, zBack, zFront };
+}
+
+/* Radius of a city's round base */
+export function cityRadius(site: Site): number {
+	return site.radius + (site.id === 'core' ? 1.1 : 1.15);
 }
 
 /* The island under a point */

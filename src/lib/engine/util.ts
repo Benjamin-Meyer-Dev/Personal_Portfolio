@@ -13,7 +13,7 @@ export function easeInOut(progress: number): number {
 }
 
 /* A tiny seeded random generator. Same seed, same numbers, so the map looks identical on every visit */
-export function mulberrry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
 	let state = seed;
 
 	return () => {
