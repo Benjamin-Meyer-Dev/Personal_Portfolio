@@ -233,6 +233,10 @@
 	--window-unlit: #dce0e5;
 	--facade-server: #e8ebef;
 	--facade-glass: #e3e7ec;
+
+	/* 3D map: free lots, track, trains and labels */
+	--lot-outline: #8e97a3;
+	--lot-stake: #f5f5f2;
 }
 
 *,
