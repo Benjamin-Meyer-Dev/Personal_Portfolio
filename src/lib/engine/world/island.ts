@@ -17,7 +17,7 @@ export const islandStyle = {
 };
 
 /* One flay layer of the model */
-function layerMesh(pts: Pt[], y0: number, y1: number, top: number, side: number, shadows: boolean) {
+function layerMesh(pts: Pt[], y0: number, y1: number, top: number, side: number) {
 	const geometry = new THREE.ExtrudeGeometry(shapeFrom(pts), {
 		depth: y1 - y0,
 		bevelEnabled: false,
@@ -33,7 +33,6 @@ function layerMesh(pts: Pt[], y0: number, y1: number, top: number, side: number,
 	]);
 
 	mesh.receiveShadow = true;
-	mesh.castShadow = shadows;
 
 	return mesh;
 }
@@ -43,7 +42,6 @@ export interface LayerStyle {
 	elev: number;
 	top: number;
 	side: number;
-	shadows: boolean;
 }
 
 export interface LayerOptions extends LayerStyle {
@@ -86,28 +84,12 @@ function stackLayers(
 ): Layers {
 	const midY = islandStyle.beachTop + (options.elev - islandStyle.beachTop) * 0.62;
 
+	group.add(layerMesh(beach, -0.04, islandStyle.beachTop, islandStyle.sand, islandStyle.sandSide));
 	group.add(
-		layerMesh(beach, -0.04, islandStyle.beachTop, islandStyle.sand, islandStyle.sandSide, false)
-	);
-	group.add(
-		layerMesh(
-			mid,
-			islandStyle.beachTop - 0.02,
-			midY,
-			islandStyle.grass,
-			islandStyle.grassSide,
-			options.shadows
-		)
+		layerMesh(mid, islandStyle.beachTop - 0.02, midY, islandStyle.grass, islandStyle.grassSide)
 	);
 
-	const plate = layerMesh(
-		top,
-		midY - 0.02,
-		options.elev,
-		options.top,
-		options.side,
-		options.shadows
-	);
+	const plate = layerMesh(top, midY - 0.02, options.elev, options.top, options.side);
 
 	group.add(plate);
 
@@ -204,7 +186,7 @@ function nameDecal(island: Island): THREE.Mesh {
 	return decal;
 }
 
-export function buildIsland(scene: THREE.Scene, island: Island, shadows: boolean): IslandParts {
+export function buildIsland(scene: THREE.Scene, island: Island): IslandParts {
 	const group = new THREE.Group();
 	scene.add(group);
 
@@ -225,8 +207,7 @@ export function buildIsland(scene: THREE.Scene, island: Island, shadows: boolean
 	const layers = stackLayers(group, top, mid, beach, {
 		elev: island.elev,
 		top: topCol,
-		side: sideCol,
-		shadows
+		side: sideCol
 	});
 	const trimPts = top.map(([x, z]) => new THREE.Vector3(x, island.elev + 0.012, z));
 	const trim = new THREE.LineBasicMaterial({
@@ -250,7 +231,7 @@ function capitalRadius(layout: Layout): number {
 }
 
 /* The small round island in the middle where the capital stands */
-export function buildCapitalIsland(scene: THREE.Scene, layout: Layout, shadows: boolean): Layers {
+export function buildCapitalIsland(scene: THREE.Scene, layout: Layout): Layers {
 	const radius = capitalRadius(layout);
 	const rnd = worldRandom(77);
 	const bumps = wobble(rnd);
@@ -271,7 +252,6 @@ export function buildCapitalIsland(scene: THREE.Scene, layout: Layout, shadows: 
 		top: hexColour('--island-side'),
 		side: mixHex(hexColour('--island-side'), hexColour('--island-side-shade'), 0.16),
 		rnd,
-		shadows,
 		mid: 0.26,
 		midAmp: 0.22,
 		beach: 0.24,

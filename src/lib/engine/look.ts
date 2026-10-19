@@ -8,6 +8,7 @@ export const studio = {
 	ambient: { color: hexColour('--light-ambient'), intensity: 0.75 },
 	key: { color: hexColour('--light-sun'), intensity: 3.3, position: [-11, 19, 8] as const },
 	rim: { color: hexColour('--light-rim'), intensity: 0.4, position: [-10, 6, -12] as const },
+	fill: { color: hexColour('--light-ambient'), intensity: 1.2, position: [12, 2.5, 3] as const },
 	fx: { tilt: 0.85, tiltY: 0.5, tiltW: 0.3, vignette: 0.12, grain: 0.018 },
 	incidentTint: [1.06, 0.93, 0.93] as const
 };
@@ -190,6 +191,10 @@ export function applyStudioLook(map: MapScene): Look {
 	const rim = new THREE.DirectionalLight(look.rim.color, look.rim.intensity);
 	rim.position.set(...look.rim.position);
 	scene.add(rim);
+
+	const fill = new THREE.DirectionalLight(look.fill.color, look.fill.intensity);
+	fill.position.set(...look.fill.position);
+	scene.add(fill);
 
 	if (shadows) {
 		renderer.shadowMap.enabled = true;

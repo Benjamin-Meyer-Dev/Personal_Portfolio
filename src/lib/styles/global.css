@@ -213,6 +213,26 @@
 	--rock-2: #cdc9bd;
 	--rock-3: #e6e3da;
 	--rock-4: #c4c1b6;
+
+	/* 3D map: the model's own palette, card and paint */
+	--model-white: #f7f8fa;
+	--model-paper: #eef0f3;
+	--model-pale: #d9dde2;
+	--model-mid: #7d8691;
+	--model-ink: #1b2129;
+	--model-blue: var(--cloud-accent);
+	--model-amber: var(--work-accent);
+	--model-red: #de4448;
+	--model-violet: var(--data-accent);
+	--model-mint: var(--self-accent);
+
+	/* 3D map: city bases, buildings and windows */
+	--city-ground: #f6f7f8;
+	--city-road: #e7eaee;
+	--city-path: #eaecef;
+	--window-unlit: #dce0e5;
+	--facade-server: #e8ebef;
+	--facade-glass: #e3e7ec;
 }
 
 *,
