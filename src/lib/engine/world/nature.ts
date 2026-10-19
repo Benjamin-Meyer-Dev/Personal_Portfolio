@@ -289,7 +289,6 @@ export function buildNature(
 			top: hexColour('--islet-top'),
 			side: hexColour('--islet-side'),
 			rnd: srnd,
-			shadows,
 			lobes: 2,
 			mid: 0.14,
 			midAmp: 0.12,

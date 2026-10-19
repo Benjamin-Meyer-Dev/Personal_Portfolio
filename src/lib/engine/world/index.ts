@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Project } from '#lib/data/types.ts';
 import type { FitPoint } from '../CameraRig.ts';
+import { buildCity, type City } from '../cities/index.ts';
 import { landOutline, layoutProjects, type Layout } from '../layout.ts';
 import { applyStudioLook } from '../look.ts';
 import type { MapScene } from '../MapScene.ts';
@@ -14,6 +15,7 @@ export interface World {
 	lake: LakeParts;
 	islands: IslandParts[];
 	capital: Layers;
+	cities: City[];
 	fitPoints: FitPoint[];
 }
 
@@ -24,10 +26,18 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 	});
 	const { shadows } = applyStudioLook(map);
 	const lake = map.add(buildLake(map.scene, layout));
-	const islands = layout.islands.map((island) => buildIsland(map.scene, island, shadows));
-	const capital = buildCapitalIsland(map.scene, layout, shadows);
+	const islands = layout.islands.map((island) => buildIsland(map.scene, island));
+	const capital = buildCapitalIsland(map.scene, layout);
 
 	buildNature(map.scene, layout, lake, islands, capital, shadows);
+
+	const cities = layout.sites.map((site) => {
+		const city = buildCity(site);
+		map.scene.add(city.group);
+		map.add({ update: (dt, time) => city.update(dt, time) });
+
+		return city;
+	});
 
 	const fitPoints: FitPoint[] = [];
 
@@ -37,5 +47,21 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 		}
 	}
 
-	return { layout, lake, islands, capital, fitPoints };
+	for (const city of cities) {
+		const radius = city.radius * city.scale;
+
+		for (let step = 0; step < 20; step++) {
+			const angle = (step / 20) * Math.PI * 2;
+
+			fitPoints.push({
+				point: new THREE.Vector3(
+					city.site.x + Math.cos(angle) * radius,
+					city.elev,
+					city.site.z + Math.sin(angle) * radius
+				)
+			});
+		}
+	}
+
+	return { layout, lake, islands, capital, cities, fitPoints };
 }
