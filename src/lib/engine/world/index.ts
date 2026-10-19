@@ -8,14 +8,15 @@ import type { MapScene } from '../MapScene.ts';
 import { buildCapitalIsland, buildIsland, type IslandParts, type Layers } from './island.ts';
 import { buildLake, landLevels, type LakeParts } from './lake.ts';
 import { worldRandom } from './seed.ts';
+import { buildLot, type LotParts } from './lots.ts';
 import { buildNature } from './nature.ts';
-
 export interface World {
 	layout: Layout;
 	lake: LakeParts;
 	islands: IslandParts[];
 	capital: Layers;
 	cities: City[];
+	lots: LotParts[];
 	fitPoints: FitPoint[];
 }
 
@@ -30,6 +31,19 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 	const capital = buildCapitalIsland(map.scene, layout);
 
 	buildNature(map.scene, layout, lake, islands, capital, shadows);
+
+	const lots = layout.freeLots.map((lot) => buildLot(map.scene, lot));
+	map.add({
+		update: (dt, time) => {
+			lots.forEach((lot, i) => {
+				for (const child of lot.group.children) {
+					if (child.userData.flag) {
+						child.rotation.y = 0.3 * Math.sin(time * 2 + i);
+					}
+				}
+			});
+		}
+	});
 
 	const cities = layout.sites.map((site) => {
 		const city = buildCity(site);
@@ -63,5 +77,5 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 		}
 	}
 
-	return { layout, lake, islands, capital, cities, fitPoints };
+	return { layout, lake, islands, capital, cities, lots, fitPoints };
 }
