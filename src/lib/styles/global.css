@@ -238,6 +238,11 @@
 	/* 3D map: free lots, track, trains and labels */
 	--lot-outline: #8e97a3;
 	--lot-stake: #f5f5f2;
+	--track-deck: var(--model-white);
+	--track-side: #e3e7ec;
+	--track-pillar: var(--model-paper);
+	--track-platform: var(--white);
+	--track-canopy: #f3f4f6;
 }
 
 *,
