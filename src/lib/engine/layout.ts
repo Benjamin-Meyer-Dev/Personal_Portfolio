@@ -137,7 +137,7 @@ export function inLand(land: Land, x: number, z: number): boolean {
 }
 
 /* Does a distrcit fit inside a land with room to spare on each side */
-export function distrcitFits(
+export function districtFits(
 	land: Land,
 	x: number,
 	z: number,
@@ -205,7 +205,7 @@ export function layoutProjects(
 		const half = (small + big) / 2;
 		const trial: Land = { cx: 0, cz: 0, hx: ratio * half, hz: half };
 
-		if (distrcitFits(trial, 0, 0, width, deepest, sizes.shoreRoom + sizes.landSlack)) {
+		if (districtFits(trial, 0, 0, width, deepest, sizes.shoreRoom + sizes.landSlack)) {
 			big = half;
 		} else {
 			small = half;
@@ -248,7 +248,7 @@ export function layoutProjects(
 		let dz = (rnd() * 2 - 1) * sizes.districtShift;
 
 		const fits = () =>
-			distrcitFits(land, land.cx + dx, land.cz + dz, width, depth, sizes.shoreRoom);
+			districtFits(land, land.cx + dx, land.cz + dz, width, depth, sizes.shoreRoom);
 
 		for (let step = 0; step < 40 && !fits(); step++) {
 			dx *= 0.85;

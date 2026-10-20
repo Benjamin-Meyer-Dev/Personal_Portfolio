@@ -27,10 +27,10 @@ export const skillInfo = {
 	fastApi: { name: 'FastAPI', short: 'FastAPI' }
 } satisfies Record<string, SkillInfo>;
 
-export type SkillID = keyof typeof skillInfo;
+export type SkillId = keyof typeof skillInfo;
 
 /* The skills that get a transit line on the map, in the order the skill picker shows them */
-export const skillBar: SkillID[] = [
+export const skillBar: SkillId[] = [
 	'python',
 	'cdk',
 	'serverless',
@@ -43,6 +43,6 @@ export const skillBar: SkillID[] = [
 	'selfHost'
 ];
 
-export function skillName(id: SkillID): string {
+export function skillName(id: SkillId): string {
 	return skillInfo[id].name;
 }
