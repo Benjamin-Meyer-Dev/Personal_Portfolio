@@ -1,4 +1,4 @@
-import type { SkillID } from '#lib/data/skills.ts';
+import type { SkillId } from '#lib/data/skills.ts';
 
 /* The four kinds of work, each one is an island on the map */
 export type TypeId = 'cloud' | 'work' | 'data' | 'self';
@@ -31,7 +31,7 @@ export interface Project {
 	actions: Action[];
 	facts: string[];
 	tags: string[];
-	uses: Partial<Record<SkillID, string>>;
+	uses: Partial<Record<SkillId, string>>;
 	map?: {
 		radius?: number;
 		labelY?: number;
