@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { projectList } from '#lib/data/index.ts';
 import {
-	distrcitFits,
+	districtFits,
 	groundAt,
 	islandAt,
 	landOutline,
@@ -73,19 +73,21 @@ describe('layoutProjects', () => {
 
 			for (const island of random.islands) {
 				const shore = landOutline(island.land, 120);
+				const where = `seed ${seed}, ${island.type.id}`;
+				const channelX = Math.min(...shore.map(([x]) => island.sx * x));
+				const channelZ = Math.min(...shore.map(([, z]) => island.sz * z));
+				const capital = Math.min(...shore.map(([x, z]) => Math.hypot(x, z)));
 
-				for (const [x, z] of shore) {
-					expect(island.sx * x).toBeGreaterThanOrEqual(layoutSizes.aveX - 1e-6);
-					expect(island.sz * z).toBeGreaterThanOrEqual(layoutSizes.aveZ - 1e-6);
-					expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(layoutSizes.capitalRoom - 1e-6);
-				}
+				expect(channelX, where).toBeGreaterThanOrEqual(layoutSizes.aveX - 1e-6);
+				expect(channelZ, where).toBeGreaterThanOrEqual(layoutSizes.aveZ - 1e-6);
+				expect(capital, where).toBeGreaterThanOrEqual(layoutSizes.capitalRoom - 1e-6);
 
 				const midX = (island.x0 + island.x1) / 2;
 				const midZ = (island.z0 + island.z1) / 2;
 
 				expect(
-					distrcitFits(island.land, midX, midZ, island.width, island.depth, layoutSizes.shoreRoom),
-					`seed ${seed}, ${island.type.id}`
+					districtFits(island.land, midX, midZ, island.width, island.depth, layoutSizes.shoreRoom),
+					where
 				).toBe(true);
 			}
 

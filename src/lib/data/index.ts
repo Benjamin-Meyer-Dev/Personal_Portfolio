@@ -1,5 +1,5 @@
 import { futureProjects, projectTypes, allProjects } from './projects';
-import { skillBar, skillInfo, type SkillID } from './skills';
+import { skillBar, skillInfo, type SkillId } from './skills';
 import type { Project, ProjectType, TypeId } from './types';
 
 export * from './types';
@@ -29,14 +29,14 @@ export function getType(id: TypeId): ProjectType {
 	return projectType;
 }
 
-export function usesSkill(project: Project, skill: SkillID): boolean {
+export function usesSkill(project: Project, skill: SkillId): boolean {
 	return Boolean(project.uses[skill]);
 }
 
 /* The skills a project uses, in a stable order - sky bar fills first */
-export function skillsOf(project: Project): SkillID[] {
-	const keys = Object.keys(project.uses) as SkillID[];
-	const rank = (skill: SkillID) => {
+export function skillsOf(project: Project): SkillId[] {
+	const keys = Object.keys(project.uses) as SkillId[];
+	const rank = (skill: SkillId) => {
 		const index = skillBar.indexOf(skill);
 		return index < 0 ? skillBar.length + Object.keys(skillInfo).indexOf(skill) : index;
 	};
@@ -48,7 +48,7 @@ export function projectsOfType(type: TypeId, list: Project[] = allProjects): Pro
 	return list.filter((project) => project.type === type);
 }
 
-export function projectsUsing(skill: SkillID, list: Project[] = allProjects): Project[] {
+export function projectsUsing(skill: SkillId, list: Project[] = allProjects): Project[] {
 	return list.filter((project) => usesSkill(project, skill));
 }
 
