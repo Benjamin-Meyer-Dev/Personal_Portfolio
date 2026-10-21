@@ -9,6 +9,7 @@ import { buildCapitalIsland, buildIsland, type IslandParts, type Layers } from '
 import { buildLake, landLevels, type LakeParts } from './lake.ts';
 import { buildNetwork, type Network } from '../transit/graph.ts';
 import { buildTrack, type Track } from '../transit/track.ts';
+import { Trains } from '../transit/trains.ts';
 import { buildLot, type LotParts } from './lots.ts';
 import { buildNature } from './nature.ts';
 import { worldRandom } from './seed.ts';
@@ -22,6 +23,7 @@ export interface World {
 	lots: LotParts[];
 	network: Network;
 	track: Track;
+	trains: Trains;
 	fitPoints: FitPoint[];
 }
 
@@ -68,6 +70,7 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 
 	const network = buildNetwork(layout, projects);
 	const track = buildTrack(map.scene, network, layout, shadows);
+	const trains = map.add(new Trains(map.scene, network, shadows));
 
 	for (const city of cities) {
 		const radius = city.radius * city.scale;
@@ -85,5 +88,5 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 		}
 	}
 
-	return { layout, lake, islands, capital, cities, lots, network, track, fitPoints };
+	return { layout, lake, islands, capital, cities, lots, network, track, trains, fitPoints };
 }

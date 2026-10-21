@@ -13,6 +13,9 @@ import { cssColour } from '#lib/styles/tokens.ts';
 /* Height of the guideway above the water */
 export const guideHeight = 1.15;
 
+/* How far each track is from the middle */
+export const trackOffset = 0.17;
+
 /* Radius of the loop around the capital */
 export const ringRadius = 2.9;
 
@@ -33,7 +36,7 @@ export const linePackets: Partial<Record<SkillId, string[]>> = {
 	knex: ['knex migrate']
 };
 
-export type EdgeKind = 'ring' | 'main' | 'wye' | 'spine' | 'spur';
+export type EdgeKind = 'ring' | 'main' | 'wye' | 'spine' | 'spur' | 'loop';
 
 export interface Edge {
 	i: number;
@@ -54,6 +57,8 @@ export interface GNode {
 
 /* One train's run: from the capital out to the furthest stop on one island */
 export interface Segment {
+	central: string;
+	island: string;
 	pts: THREE.Vector3[];
 	cum: number[];
 	len: number;
@@ -66,9 +71,7 @@ export interface Line {
 	colour: number;
 	users: string[];
 	packets: string[];
-	lane: number;
 	stops: string[];
-	central: string;
 	segments: Segment[];
 }
 
@@ -76,6 +79,7 @@ export interface Network {
 	nodes: Record<string, GNode>;
 	edges: Edge[];
 	lines: Line[];
+	laneGap: number;
 	stationOf(projectId: string): string | null;
 }
 
@@ -83,6 +87,65 @@ export interface Network {
 export function sampleCurve(curve: THREE.Curve<THREE.Vector3>, step: number): THREE.Vector3[] {
 	const divisions = Math.max(2, Math.ceil(curve.getLength() / step));
 	return curve.getSpacedPoints(divisions);
+}
+
+/* The unit vector pointing left of the way */
+function leftOf(from: THREE.Vector3, to: THREE.Vector3): { x: number; z: number } {
+	const length = Math.hypot(to.x - from.x, to.z - from.z) || 1;
+	return { x: (to.z - from.z) / length, z: -(to.x - from.x) / length };
+}
+
+/* A path moved sideways point by point */
+export function offsetPath(pts: THREE.Vector3[], offsets: number[]): THREE.Vector3[] {
+	const last = pts.length - 1;
+
+	return pts.map((point, index) => {
+		const before = leftOf(pts[Math.max(index - 1, 0)], pts[Math.max(index, 1)]);
+		const after = leftOf(pts[Math.min(index, last - 1)], pts[Math.min(index + 1, last)]);
+		const length = Math.hypot(before.x + after.x, before.z + after.z) || 1;
+		const leftX = (before.x + after.x) / length;
+		const leftZ = (before.z + after.z) / length;
+		const reach = offsets[index] / Math.max(0.5, leftX * before.x + leftZ * before.z);
+
+		return new THREE.Vector3(point.x + leftX * reach, point.y, point.z + leftZ * reach);
+	});
+}
+
+/* A teardrop of single track past the end of a line so trains can turn around */
+function turningLoop(end: THREE.Vector3, ahead: { x: number; z: number }): THREE.Vector3[] {
+	const reach = 1.1;
+	const radius = 0.55;
+	const left = { x: ahead.z, z: -ahead.x };
+	const at = (along: number, side: number) =>
+		new THREE.Vector3(
+			end.x + ahead.x * along + left.x * side,
+			end.y,
+			end.z + ahead.z * along + left.z * side
+		);
+	const toCentre = Math.hypot(reach, trackOffset);
+	const tangent = Math.sqrt(toCentre * toCentre - radius * radius);
+	const heading = Math.atan2(trackOffset, reach) - Math.asin(radius / toCentre);
+	const touchAlong = tangent * Math.cos(heading);
+	const touchSide = -trackOffset + tangent * Math.sin(heading);
+	const start = Math.atan2(touchSide, touchAlong - reach);
+	const pts: THREE.Vector3[] = [];
+
+	for (let step = 0; step < 5; step++) {
+		const share = step / 5;
+		pts.push(at(touchAlong * share, -trackOffset + (touchSide + trackOffset) * share));
+	}
+
+	for (let step = 0; step <= 24; step++) {
+		const angle = start - (2 * start * step) / 24;
+		pts.push(at(reach + radius * Math.cos(angle), radius * Math.sin(angle)));
+	}
+
+	for (let step = 1; step <= 5; step++) {
+		const share = step / 5;
+		pts.push(at(touchAlong * (1 - share), -touchSide + (touchSide + trackOffset) * share));
+	}
+
+	return pts;
 }
 
 export function buildNetwork(layout: Layout, projects: Project[]): Network {
@@ -212,6 +275,14 @@ export function buildNetwork(layout: Layout, projects: Project[]): Network {
 				'End of the line, room to extend',
 				'spur'
 			);
+
+			edge(
+				't_' + key,
+				't_' + key,
+				turningLoop(guidePoint(spineX, endZ), { x: 0, z: sz }),
+				'Turning loop',
+				'loop'
+			);
 		}
 	}
 
@@ -253,20 +324,53 @@ export function buildNetwork(layout: Layout, projects: Project[]): Network {
 			colour: new THREE.Color(info.colour ?? cssColour('--grey')).getHex(),
 			users,
 			packets: linePackets[skill] ?? [info.name],
-			lane: 0,
 			stops: [],
-			central: '',
 			segments: []
 		});
 	}
 
-	const net: Network = { nodes, edges, lines, stationOf };
-	const lineCount = lines.length;
+	const islandOf = (key: string) => layout.islands.find((island) => island.type.id === key)!;
+	const centralFor = (key: string) => (islandOf(key).sz < 0 ? 'rN' : 'rS');
+	const runsOf = lines.map((skillLine) => {
+		const furthest = new Map<string, { st: string; row: number }>();
+
+		for (const pid of skillLine.users) {
+			const st = stationOf(pid);
+
+			if (!st) {
+				continue;
+			}
+
+			const [, key, row] = st.split('_');
+
+			if (!furthest.has(key) || +row > furthest.get(key)!.row) {
+				furthest.set(key, { st, row: +row });
+			}
+		}
+
+		return islandOrder
+			.filter((key) => furthest.has(key))
+			.map((key) => ({ key, leaf: furthest.get(key)!.st }));
+	});
+
+	const bundles = new Map<string, number[]>();
+
+	runsOf.forEach((runs, li) => {
+		for (const { key } of runs) {
+			bundles.set(key, [...(bundles.get(key) ?? []), li]);
+		}
+	});
+
+	const biggest = Math.max(1, ...[...bundles.values()].map((bundle) => bundle.length));
+	const laneGap = Math.min(0.07, 0.21 / biggest);
+	const net: Network = { nodes, edges, lines, laneGap, stationOf };
 
 	lines.forEach((skillLine, li) => {
-		skillLine.lane = (li - (lineCount - 1) / 2) * Math.min(0.11, 0.56 / Math.max(1, lineCount));
-		skillLine.central = li % 2 ? 'rS' : 'rN';
-		skillLine.stops = [skillLine.central];
+		for (const { key } of runsOf[li]) {
+			if (!skillLine.stops.includes(centralFor(key))) {
+				skillLine.stops.push(centralFor(key));
+			}
+		}
 
 		for (const pid of skillLine.users) {
 			const st = stationOf(pid);
@@ -276,58 +380,63 @@ export function buildNetwork(layout: Layout, projects: Project[]): Network {
 			}
 		}
 
-		const furthest = new Map<string, { st: string; row: number }>();
+		for (const { key, leaf } of runsOf[li]) {
+			const island = islandOf(key);
+			const central = centralFor(key);
+			const bundle = bundles.get(key)!;
+			const slot = bundle.indexOf(li) + 0.5;
+			const side = -island.sx * island.sz;
+			const half = side * slot * laneGap;
+			const middle = side * (slot - bundle.length / 2) * laneGap;
+			const centre: THREE.Vector3[] = [];
+			const offsets: number[] = [];
+			const stopAt = [0];
 
-		for (const st of skillLine.stops) {
-			if (!st.startsWith('s_')) {
-				continue;
-			}
+			for (const step of route(net, central, leaf, li)) {
+				const edgePoints = step.fwd ? step.edge.pts : [...step.edge.pts].reverse();
 
-			const [, key, row] = st.split('_');
-
-			if (!furthest.has(key) || +row > furthest.get(key)!.row) {
-				furthest.set(key, { st, row: +row });
-			}
-
-			const leaves = islandOrder
-				.filter((islandKey) => furthest.has(islandKey))
-				.map((islandKey) => furthest.get(islandKey)!.st);
-
-			for (const leaf of leaves) {
-				const path = route(net, skillLine.central, leaf, li);
-				const pts: THREE.Vector3[] = [];
-				const cum = [0];
-				const stopS = [0];
-
-				for (const step of path) {
-					const edgePoints = step.fwd ? step.edge.pts : [...step.edge.pts].reverse();
-
-					if (!step.edge.lines.includes(li)) {
-						step.edge.lines.push(li);
-					}
-
-					edgePoints.forEach((point, j) => {
-						if (pts.length && j === 0) {
-							return;
-						}
-
-						pts.push(point.clone());
-
-						if (pts.length > 1) {
-							cum.push(cum.at(-1)! + point.distanceTo(pts[pts.length - 2]));
-						}
-					});
-
-					const at = step.fwd ? step.edge.to : step.edge.from;
-
-					if (skillLine.stops.includes(at)) {
-						stopS.push(cum.at(-1)!);
-					}
+				if (!step.edge.lines.includes(li)) {
+					step.edge.lines.push(li);
 				}
 
-				if (pts.length > 1) {
-					skillLine.segments.push({ pts, cum, len: cum.at(-1)!, stopS });
+				const kind = step.edge.kind;
+
+				edgePoints.forEach((point, index) => {
+					if (centre.length && index === 0) {
+						return;
+					}
+
+					const along = index / (edgePoints.length - 1);
+					let blend = 0;
+
+					if (kind === 'wye') {
+						blend = along * along * (3 - 2 * along);
+					} else if (kind === 'spine' || kind === 'spur') {
+						blend = 1;
+					}
+
+					centre.push(point);
+					offsets.push(half + (middle - half) * blend);
+				});
+
+				const at = step.fwd ? step.edge.to : step.edge.from;
+
+				if (skillLine.stops.includes(at)) {
+					stopAt.push(centre.length - 1);
 				}
+			}
+
+			const pts = offsetPath(centre, offsets);
+			const cum = [0];
+
+			for (let index = 1; index < pts.length; index++) {
+				cum.push(cum[index - 1] + pts[index].distanceTo(pts[index - 1]));
+			}
+
+			const stopS = stopAt.map((index) => cum[index]);
+
+			if (pts.length > 1) {
+				skillLine.segments.push({ central, island: key, pts, cum, len: cum.at(-1)!, stopS });
 			}
 		}
 	});

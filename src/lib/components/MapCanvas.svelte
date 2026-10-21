@@ -32,6 +32,11 @@
 		map.rig.minR = 22;
 		map.rig.flyTo(overview());
 		map.rig.snap();
+
+		if (import.meta.env.DEV || location.search.includes('debug')) {
+			(window as unknown as { debugWorld: typeof world }).debugWorld = world;
+		}
+
 		map.start();
 
 		return () => map.dispose();
