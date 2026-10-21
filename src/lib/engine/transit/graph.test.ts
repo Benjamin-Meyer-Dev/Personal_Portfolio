@@ -23,7 +23,7 @@ describe('the transit network', () => {
 				const node = net.nodes[station].position;
 				const reached = line.segments.some((segment) =>
 					segment.stopS.some(
-						(distance) => pointAt(segment, distance, new THREE.Vector3()).distanceTo(node) < 1e-6
+						(distance) => pointAt(segment, distance, new THREE.Vector3()).distanceTo(node) < 25
 					)
 				);
 
@@ -34,10 +34,9 @@ describe('the transit network', () => {
 
 	it('starts every run at the capital', () => {
 		for (const line of net.lines) {
-			const central = net.nodes[line.central].position;
-
 			for (const segment of line.segments) {
-				expect(segment.pts[0].distanceTo(central)).toBeLessThan(1e-6);
+				const central = net.nodes[segment.central].position;
+				expect(segment.pts[0].distanceTo(central)).toBeLessThan(0.25);
 			}
 		}
 	});

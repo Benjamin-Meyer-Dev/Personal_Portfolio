@@ -159,7 +159,8 @@ export function buildTrack(
 	const pillars: [number, number, number, number][] = [];
 
 	for (const edge of net.edges) {
-		const strip = new THREE.Mesh(stripGeo(edge.pts, 0, deckWidth, null, 0.14), deck);
+		const width = edge.kind === 'loop' ? 0.4 : deckWidth;
+		const strip = new THREE.Mesh(stripGeo(edge.pts, 0, width, null, 0.14), deck);
 		strip.castShadow = shadows;
 		strip.receiveShadow = true;
 		root.add(strip);

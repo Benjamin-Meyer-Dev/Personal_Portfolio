@@ -243,6 +243,7 @@
 	--track-pillar: var(--model-paper);
 	--track-platform: var(--white);
 	--track-canopy: #f3f4f6;
+	--tag-plate: color-mix(in srgb, var(--white) 94%, transparent);
 }
 
 *,
