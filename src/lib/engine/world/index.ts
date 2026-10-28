@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Project } from '#lib/data/types.ts';
 import type { FitPoint } from '../CameraRig.ts';
 import { buildCity, type City } from '../cities/index.ts';
+import { buildPlacard, stepPlacard, type Placard } from '../labels/placards.ts';
 import { landOutline, layoutProjects, type Layout } from '../layout.ts';
 import { applyStudioLook } from '../look.ts';
 import type { MapScene } from '../MapScene.ts';
@@ -24,6 +25,7 @@ export interface World {
 	network: Network;
 	track: Track;
 	trains: Trains;
+	placards: Placard[];
 	fitPoints: FitPoint[];
 }
 
@@ -72,6 +74,15 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 	const track = buildTrack(map.scene, network, layout, shadows);
 	const trains = map.add(new Trains(map.scene, network, shadows));
 
+	const placards = cities.map((city) => buildPlacard(city, network));
+	map.add({
+		update: (dt) => {
+			for (const placard of placards) {
+				stepPlacard(placard, map, dt, placard.city.hover);
+			}
+		}
+	});
+
 	for (const city of cities) {
 		const radius = city.radius * city.scale;
 
@@ -88,5 +99,30 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 		}
 	}
 
-	return { layout, lake, islands, capital, cities, lots, network, track, trains, fitPoints };
+	for (const placard of placards) {
+		const city = placard.city;
+
+		fitPoints.push({
+			point: new THREE.Vector3(
+				city.site.x,
+				city.elev + (0.14 + placard.floatH + placard.height) * city.scale,
+				city.site.z + placard.root.position.z * city.scale
+			),
+			lift: 0.01
+		});
+	}
+
+	return {
+		layout,
+		lake,
+		islands,
+		capital,
+		cities,
+		lots,
+		network,
+		track,
+		trains,
+		placards,
+		fitPoints
+	};
 }
