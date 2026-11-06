@@ -67,6 +67,7 @@
 
 	/* frosted panels: white, slightly see-through, over the map */
 	--header-glass: #eef1f5d1;
+	--glass-90: color-mix(in srgb, var(--surface) 90%, transparent);
 
 	/* type */
 	--sans: 'Instrument Sans', system-ui, sans-serif;

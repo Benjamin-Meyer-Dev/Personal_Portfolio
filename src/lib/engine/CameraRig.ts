@@ -62,6 +62,11 @@ export class CameraRig implements Part {
 		canvas.style.cursor = 'grab';
 	}
 
+	/* True while a drag or a pinch is in progress */
+	get isDragging(): boolean {
+		return Boolean(this.drag?.moved || this.pinch);
+	}
+
 	/* Glide to a new view */
 	flyTo(goal: Partial<View>): void {
 		this.goal = { ...this.goal, ...goal };
