@@ -8,20 +8,11 @@
 
 	$effect(() => {
 		const map = new MapScene(canvas, { onReady: () => (ready = true) });
-		const world = buildWorld(map, projectList());
+		const frame = { top: 84, bottom: 108, side: 24 };
+		const world = buildWorld(map, projectList(), { fitTop: frame.top });
 
 		const overview = () =>
-			map.rig.fit(
-				world.fitPoints,
-				map.width,
-				map.height,
-				{ top: 84, bottom: 108, side: 24 },
-				{
-					tx: 1,
-					tz: 3.5,
-					el: 0.56
-				}
-			);
+			map.rig.fit(world.fitPoints, map.width, map.height, frame, { tx: 1, tz: 3.5, el: 0.56 });
 
 		map.onResize = () => {
 			if (!map.rig.dragged) {

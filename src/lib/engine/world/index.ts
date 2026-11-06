@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Project } from '#lib/data/types.ts';
 import type { FitPoint } from '../CameraRig.ts';
 import { buildCity, type City } from '../cities/index.ts';
+import { declutter } from '../labels/declutter.ts';
 import { buildPlacard, stepPlacard, type Placard } from '../labels/placards.ts';
 import { landOutline, layoutProjects, type Layout } from '../layout.ts';
 import { applyStudioLook } from '../look.ts';
@@ -29,7 +30,11 @@ export interface World {
 	fitPoints: FitPoint[];
 }
 
-export function buildWorld(map: MapScene, projects: Project[]): World {
+export interface WorldOptions {
+	fitTop: number;
+}
+
+export function buildWorld(map: MapScene, projects: Project[], opts: WorldOptions): World {
 	const layout = layoutProjects(projects, {
 		coreElev: landLevels.coreElev,
 		rnd: worldRandom(5)
@@ -75,10 +80,16 @@ export function buildWorld(map: MapScene, projects: Project[]): World {
 	const trains = map.add(new Trains(map.scene, network, shadows));
 
 	const placards = cities.map((city) => buildPlacard(city, network));
+	let frame = 0;
+
 	map.add({
 		update: (dt) => {
 			for (const placard of placards) {
 				stepPlacard(placard, map, dt, placard.city.hover);
+			}
+
+			if (frame++ % 8 === 0) {
+				declutter(placards, map.camera, map.width, map.height, opts.fitTop - 6);
 			}
 		}
 	});
