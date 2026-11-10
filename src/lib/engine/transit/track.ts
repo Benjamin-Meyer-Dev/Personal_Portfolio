@@ -110,6 +110,7 @@ function stationSign(colours: number[]): THREE.Sprite {
 	const width = 0.16 * colours.length + 0.04;
 
 	sign.scale.set(width, (width * 80) / canvas.width, 1);
+	sign.renderOrder = 5;
 
 	return sign;
 }

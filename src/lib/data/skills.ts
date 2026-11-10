@@ -46,3 +46,9 @@ export const skillBar: SkillId[] = [
 export function skillName(id: SkillId): string {
 	return skillInfo[id].name;
 }
+
+/* A skill's transit line colour */
+export function skillColour(id: SkillId): string | undefined {
+	const info: SkillInfo = skillInfo[id];
+	return info.colour;
+}

@@ -26,6 +26,8 @@
 	--line: color-mix(in srgb, var(--ink) 8%, transparent);
 	--line-2: color-mix(in srgb, var(--ink) 14%, transparent);
 	--line-3: color-mix(in srgb, var(--ink) 20%, transparent);
+	--panel-border: color-mix(in srgb, var(--ink) 9%, transparent);
+	--card-border: color-mix(in srgb, var(--ink) 12%, transparent);
 
 	/* darker, paler and outline versions of the accents */
 	--blue-ink: #163f82;
@@ -68,6 +70,7 @@
 	/* frosted panels: white, slightly see-through, over the map */
 	--header-glass: #eef1f5d1;
 	--glass-90: color-mix(in srgb, var(--surface) 90%, transparent);
+	--glass-95: color-mix(in srgb, var(--surface) 95%, transparent);
 
 	/* type */
 	--sans: 'Instrument Sans', system-ui, sans-serif;
@@ -136,7 +139,9 @@
 	--tap-size: 44px;
 	--tap-size-lg: 48px;
 	--control-height: 40px;
+	--chip-height: 26px;
 	--dot-size: 6px;
+	--swatch-size: 14px;
 
 	/* corners */
 	--radius-2xs: 2px;
