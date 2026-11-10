@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { projectList } from '#lib/data/index.ts';
+	import SelectionPanel from '#lib/components/SelectionPanel.svelte';
 	import { MapController } from '#lib/engine/MapController.ts';
 	import { MapScene } from '#lib/engine/MapScene.ts';
 	import { buildWorld } from '#lib/engine/world/index.ts';
+	import { connectMap, mapState, selectCity } from '#lib/state/map.svelte.ts';
 
 	let canvas: HTMLCanvasElement;
 	let ready = $state(false);
-	let hint = $state<string | null>(null);
 
 	$effect(() => {
 		const map = new MapScene(canvas, { onReady: () => (ready = true) });
@@ -16,18 +17,25 @@
 		const overview = () =>
 			map.rig.fit(world.fitPoints, map.width, map.height, frame, { tx: 1, tz: 3.5, el: 0.56 });
 
+		const controller = map.add(
+			new MapController(
+				map,
+				world,
+				{ overview, panelShift: true },
+				{
+					onHover: (text) => (mapState.hint = text),
+					onSelect: (id) => selectCity(id)
+				}
+			)
+		);
+
+		connectMap(controller);
+
 		map.onResize = () => {
-			if (!map.rig.dragged) {
+			if (!map.rig.dragged && !controller.selected) {
 				map.rig.flyTo(overview());
 			}
 		};
-
-		map.add(
-			new MapController(map, world, {
-				onHover: (text) => (hint = text),
-				onSelect: (id) => console.log('selected', id)
-			})
-		);
 
 		map.rig.minR = 22;
 		map.rig.flyTo(overview());
@@ -39,7 +47,10 @@
 
 		map.start();
 
-		return () => map.dispose();
+		return () => {
+			connectMap(null);
+			map.dispose();
+		};
 	});
 </script>
 
@@ -49,8 +60,10 @@
 	aria-label="A 3D model of my projects, set out as islands in a lake."
 ></canvas>
 
-{#if hint}
-	<p class="hover-text">{hint}</p>
+<SelectionPanel />
+
+{#if mapState.hint}
+	<p class="hover-text">{mapState.hint}</p>
 {/if}
 
 <style>

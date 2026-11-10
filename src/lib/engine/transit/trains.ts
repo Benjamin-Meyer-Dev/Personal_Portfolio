@@ -34,18 +34,31 @@ function worldTag(
 	text: string,
 	stroke: number
 ): { sprite: THREE.Sprite; set: (label: string) => void } {
-	const canvas = canvasEl(320, 84);
+	const tagWidth = 480;
+	const tagHeight = 84;
+	const padding = 44;
+	const canvas = canvasEl(tagWidth, tagHeight);
 	const ctx = canvas.getContext('2d')!;
 	const tex = new THREE.CanvasTexture(canvas);
 
 	tex.colorSpace = THREE.SRGBColorSpace;
 
 	const set = (label: string) => {
-		ctx.clearRect(0, 0, 320, 84);
-		ctx.font = `500 34px ${cssValue('--mono')}`;
+		ctx.clearRect(0, 0, tagWidth, tagHeight);
 
-		const width = Math.min(312, ctx.measureText(label).width + 44);
-		const x0 = (320 - width) / 2;
+		const mono = cssValue('--mono');
+
+		ctx.font = `500 34px ${mono}`;
+
+		const room = tagWidth - 8 - padding;
+		const textWidth = ctx.measureText(label).width;
+
+		if (textWidth > room) {
+			ctx.font = `500 ${Math.floor((34 * room) / textWidth)}px ${mono}`;
+		}
+
+		const width = Math.min(tagWidth - 8, ctx.measureText(label).width + padding);
+		const x0 = (tagWidth - width) / 2;
 
 		ctx.fillStyle = cssColour('--tag-plate');
 		ctx.beginPath();
@@ -57,7 +70,7 @@ function worldTag(
 		ctx.fillStyle = cssColour('--model-ink');
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.fillText(label, 160, 43);
+		ctx.fillText(label, tagWidth / 2, 43);
 		tex.needsUpdate = true;
 	};
 
@@ -66,8 +79,9 @@ function worldTag(
 	const sprite = new THREE.Sprite(
 		new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
 	);
+	const unit = 1.05 / 320;
 
-	sprite.scale.set(1.05, 1.05 / (320 / 84), 1);
+	sprite.scale.set(tagWidth * unit, tagHeight * unit, 1);
 	sprite.center.set(0.5, -0.4);
 	sprite.renderOrder = 5;
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { capitalInfo } from '#lib/data/index.ts';
+import type { View } from './CameraRig.ts';
 import type { MapScene, Part } from './MapScene.ts';
 import type { World } from './world/index.ts';
 import type { LotParts } from './world/lots.ts';
@@ -9,7 +10,13 @@ export interface MapEvents {
 	onHover?: (text: string | null) => void;
 }
 
+export interface ControllerOptions {
+	overview: () => View;
+	panelShift?: boolean;
+}
+
 export class MapController implements Part {
+	selected: string | null = null;
 	hoverCity: string | null = null;
 	hoverLot: LotParts | null = null;
 	hoverEdge: number | null = null;
@@ -20,17 +27,19 @@ export class MapController implements Part {
 	private dirty = false;
 	private cityHits: THREE.Object3D[];
 	private lotHits: THREE.Object3D[];
+	private islandVis: number[];
 
 	constructor(
 		private map: MapScene,
 		private world: World,
+		private opts: ControllerOptions,
 		private events: MapEvents = {}
 	) {
+		this.islandVis = world.islands.map(() => 1);
 		this.cityHits = [
 			...world.cities.map((city) => city.hit),
 			...world.placards.map((placard) => placard.body)
 		];
-
 		this.lotHits = world.lots.map((lot) => lot.hit);
 
 		const canvas = map.canvas;
@@ -39,19 +48,74 @@ export class MapController implements Part {
 		canvas.addEventListener('pointerleave', this.onLeave);
 	}
 
+	/* Fly into a city or back out to the whole map */
+	select(id: string | null): void {
+		this.selected = id;
+		const rig = this.map.rig;
+		rig.dragged = false;
+		rig.flyTo(id ? this.focusView(id) : this.opts.overview());
+	}
+
+	/* Close enough to see the city, slightly from above */
+	private focusView(id: string): View {
+		const city = this.world.cities.find((x) => x.id === id)!;
+		const focus = city.site.focus;
+		const distance = focus.distance * city.scale;
+		const shift = this.opts.panelShift ? distance * 0.2 : 0;
+
+		return {
+			tx: city.site.x - shift,
+			ty: focus.ty * city.scale + city.elev,
+			tz: city.site.z,
+			distance,
+			az: 0,
+			el: focus.el
+		};
+	}
+
 	update(dt: number): void {
 		if (this.dirty && !this.map.rig.isDragging) {
 			this.dirty = false;
 			this.pick();
 		}
 
-		const ease = Math.min(1, dt * 8);
+		const sel = this.selected;
+		const fast = Math.min(1, dt * 8);
+		const slow = Math.min(1, dt * 4);
 
 		for (const city of this.world.cities) {
-			city.hover += ((city.id === this.hoverCity ? 1 : 0) - city.hover) * ease;
+			city.hover += ((city.id === this.hoverCity ? 1 : 0) - city.hover) * fast;
+			const target = sel ? (city.id === sel ? 1 : 0.2) : 1;
+
+			if (Math.abs(target - city.vis) > 0.002) {
+				city.setVis(city.vis + (target - city.vis) * slow);
+			}
+		}
+
+		for (const placard of this.world.placards) {
+			placard.target = sel ? (placard.city.id === sel ? 0 : 0.28) : 1;
+		}
+
+		const selType = this.world.cities.find((city) => city.id === sel)?.site.type ?? null;
+
+		this.world.islands.forEach((islandParts, i) => {
+			const target = selType ? (islandParts.island.type.id === selType ? 1 : 0.55) : 1;
+			this.islandVis[i] += (target - this.islandVis[i]) * Math.min(1, dt * 3);
+			islandParts.trim.opacity = 0.5 * this.islandVis[i];
+			islandParts.decal.opacity = this.islandVis[i];
+		});
+
+		for (const lot of this.world.lots) {
+			const target = lot === this.hoverLot ? 1 : sel ? 0.35 : 1;
+			lot.vis += (target - lot.vis) * slow;
+
+			for (const material of lot.mats) {
+				material.opacity = lot.vis;
+			}
 		}
 
 		const trainFocus = this.world.trains.focus;
+		trainFocus.selected = sel;
 		trainFocus.hoverCity = this.hoverCity;
 		trainFocus.hoverEdge = this.hoverEdge;
 	}
@@ -109,6 +173,10 @@ export class MapController implements Part {
 
 		if (cityHit) {
 			return this.setHover(cityHit.object.userData.cityId, null, null);
+		}
+
+		if (this.selected) {
+			return this.setHover(null, null, null);
 		}
 
 		const lot = this.raycaster.intersectObjects(this.lotHits, false)[0];
